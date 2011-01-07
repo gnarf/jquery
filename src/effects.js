@@ -115,6 +115,8 @@ jQuery.fn.extend({
 			// XXX 'this' does not always have a nodeName when running the
 			// test suite
 			
+			jQuery.fx.creating = optall.duration > 0;
+			
 			if (jQuery.fx.sync && !optall.startTime) {
 				optall.startTime = jQuery.fx.now || jQuery.now();
 			}
@@ -134,6 +136,7 @@ jQuery.fn.extend({
 				}
 
 				if ( prop[p] === "hide" && hidden || prop[p] === "show" && !hidden ) {
+					jQuery.fx.creating = false;
 					return opt.complete.call(this);
 				}
 
@@ -214,7 +217,7 @@ jQuery.fn.extend({
 					}
 				}
 			});
-
+			jQuery.fx.creating = false;
 			// For JS strict compliance
 			return true;
 		});
@@ -397,7 +400,7 @@ jQuery.fx.prototype = {
 		var t = jQuery.fx.sync ? jQuery.fx.now || jQuery.now() : jQuery.now(), 
 			done = true;
 		
-		if ( gotoEnd || t >= this.options.duration + this.startTime ) {
+		if ( gotoEnd || t >= this.options.duration + this.startTime && !jQuery.fx.creating ) {
 			this.now = this.end;
 			this.pos = this.state = 1;
 			this.update();
