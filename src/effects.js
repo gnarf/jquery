@@ -116,7 +116,7 @@ jQuery.fn.extend({
 			// test suite
 			
 			if (jQuery.fx.sync && !optall.startTime) {
-				optall.startTime = jQuery.now();
+				optall.startTime = jQuery.fx.now || jQuery.now();
 			}
 
 			var opt = jQuery.extend({}, optall), p,
@@ -394,7 +394,8 @@ jQuery.fx.prototype = {
 
 	// Each step of an animation
 	step: function( gotoEnd ) {
-		var t = jQuery.fx.sync ? jQuery.fx.now : jQuery.now(), done = true;
+		var t = jQuery.fx.sync ? jQuery.fx.now || jQuery.now() : jQuery.now(), 
+			done = true;
 		
 		if ( gotoEnd || t >= this.options.duration + this.startTime ) {
 			this.now = this.end;
@@ -471,6 +472,8 @@ jQuery.extend( jQuery.fx, {
 		if ( !timers.length ) {
 			jQuery.fx.stop();
 		}
+		
+		jQuery.fx.now = 0;
 	},
 	
 	// a flag that will cause .animate() to sync startTime, and step() to use the same time across the
