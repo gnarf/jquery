@@ -111,7 +111,7 @@ jQuery.fn.extend({
 			return this.each( optall.complete );
 		}
 		
-		optall.startTime = jQuery.now();
+		if (!optall.startTime) optall.startTime = jQuery.now();
 
 		return this[ optall.queue === false ? "each" : "queue" ](function() {
 			// XXX 'this' does not always have a nodeName when running the
