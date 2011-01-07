@@ -46,8 +46,6 @@
       }
       animateIt();
       $('#toggle').click(function() {
-        console.log(jQuery.fx.sync);
-        
         jQuery.fx.sync = !jQuery.fx.sync;
         $(this).text(jQuery.fx.sync?'On':'Off');
         
