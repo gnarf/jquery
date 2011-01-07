@@ -111,6 +111,7 @@ jQuery.fn.extend({
 			return this.each( optall.complete );
 		}
 		
+		// syncronize start times for large groups
 		if (!optall.startTime) optall.startTime = jQuery.now();
 
 		return this[ optall.queue === false ? "each" : "queue" ](function() {
