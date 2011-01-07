@@ -115,10 +115,17 @@ jQuery.fn.extend({
 			// XXX 'this' does not always have a nodeName when running the
 			// test suite
 			
-			jQuery.fx.creating = optall.duration > 0;
+			// we will set jQuery.fx.now if we are in sync mode to prevent short timers
+			// from ending prematurely / slow scripts from begining animations early
+			var hadNow = jQuery.fx.now;
 			
-			if (jQuery.fx.sync && !optall.startTime) {
-				optall.startTime = jQuery.fx.now || jQuery.now();
+			if ( jQuery.fx.sync ) {
+				if ( !optall.startTime ) {
+					optall.startTime = jQuery.fx.now || jQuery.now();
+				}
+				if ( !hadNow ) {
+					jQuery.fx.now = optall.startTime;
+				}
 			}
 
 			var opt = jQuery.extend({}, optall), p,
@@ -136,8 +143,10 @@ jQuery.fn.extend({
 				}
 
 				if ( prop[p] === "hide" && hidden || prop[p] === "show" && !hidden ) {
-					jQuery.fx.creating = false;
-					return opt.complete.call(this);
+					if ( !hadNow ) {
+						jQuery.fx.now = false;
+					}
+				 	return opt.complete.call(this);
 				}
 
 				if ( isElement && ( p === "height" || p === "width" ) ) {
@@ -217,7 +226,9 @@ jQuery.fn.extend({
 					}
 				}
 			});
-			jQuery.fx.creating = false;
+			if ( !hadNow ) {
+				jQuery.fx.now = false;
+			}
 			// For JS strict compliance
 			return true;
 		});
@@ -400,7 +411,7 @@ jQuery.fx.prototype = {
 		var t = jQuery.fx.sync ? jQuery.fx.now || jQuery.now() : jQuery.now(), 
 			done = true;
 		
-		if ( gotoEnd || t >= this.options.duration + this.startTime && !jQuery.fx.creating ) {
+		if ( gotoEnd || t >= this.options.duration + this.startTime ) {
 			this.now = this.end;
 			this.pos = this.state = 1;
 			this.update();
