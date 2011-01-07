@@ -400,13 +400,18 @@ jQuery.event = {
 						jQuery.event.triggered = true;
 						
 						method = target[ targetType ];
-						if ( method && method.call ) {
-							method.call( target );
+						// Bug #1414 - Forms in particular can mask the "real" function with an
+						// <input> - detect that it doesn't have a value property
+						if ( method && !method.nodeName ) {
+							target[ targetType ]();
 						} else {              
-							// Bug #1414 - Forms in particular can mask the "real" function:
 							method = document.createElement( target.nodeName )[ targetType ];
-							if ( method && method.call ) {
-								method.call( target );
+							if ( method ) {
+								// if we got something back, might as well call it - worst case
+								// we land in the empty catch a few lines down...
+								target[ jQuery.expando + targetType ] = method;
+								target[ jQuery.expando + targetType ]();
+								delete target[ jQuery.expando + targetType ];								
 							}
 						}
 					}
