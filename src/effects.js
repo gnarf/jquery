@@ -345,7 +345,7 @@ jQuery.fx.prototype = {
 		var self = this,
 			fx = jQuery.fx;
 
-		this.startTime = jQuery.now();
+		this.startTime = this.options.startTime || jQuery.now();
 		this.start = from;
 		this.end = to;
 		this.unit = unit || this.unit || "px";
