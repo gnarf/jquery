@@ -153,7 +153,7 @@ jQuery.fn.extend({
 						// if we were responsible for setting this, unset it
 						jQuery.fx.now = 0;
 					}
-				 	return opt.complete.call(this);
+				 	return opt.complete.call( this );
 				}
 
 				if ( isElement && ( p === "height" || p === "width" ) ) {
@@ -504,7 +504,7 @@ jQuery.extend( jQuery.fx, {
 	
 	// a flag that will cause .animate() to sync startTime on large groups, and step() to use 
 	// the same time across the entire queue of animations each loop
-	sync: true,
+	sync: false,
 
 	interval: 13,
 

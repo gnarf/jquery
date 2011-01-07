@@ -25,7 +25,8 @@
 </head>
 
 <body id="body">
-  jQuery.fx.sync: <button id="toggle">On</button>
+  Click the following button a few times, witness jQuery.fx.sync in its two states...  Each click will queue 2 animations on 201 div elements - you can click the button while the test is running to watch it tear back into place on its next dequeue.<br/>
+  jQuery.fx.sync: <button id="toggle"> On/Off </button> 
   <div class="container" style='position: relative'>
     <div class="animate" style='width: 5%; background-color: blue; height: 5px;'>&nbsp;
     </div>
@@ -47,7 +48,7 @@
       animateIt();
       $('#toggle').click(function() {
         jQuery.fx.sync = !jQuery.fx.sync;
-        $(this).text(jQuery.fx.sync?'On':'Off');
+        $(this).text(jQuery.fx.sync?' On ':' Off ');
         
         animateIt();
       });
