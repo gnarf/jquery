@@ -112,7 +112,7 @@ jQuery.fn.extend({
 		}
 		
 		// syncronize start times for large groups
-		if ( !optall.startTime ) optall.startTime = jQuery.now();
+		if ( jQuery.fx.sync && !optall.startTime ) optall.startTime = jQuery.now();
 
 		return this[ optall.queue === false ? "each" : "queue" ](function() {
 			// XXX 'this' does not always have a nodeName when running the
@@ -393,8 +393,8 @@ jQuery.fx.prototype = {
 
 	// Each step of an animation
 	step: function( gotoEnd ) {
-		var t = jQuery.now(), done = true;
-
+		var t = jQuery.fx.sync ? jQuery.fx.now : jQuery.now(), done = true;
+		
 		if ( gotoEnd || t >= this.options.duration + this.startTime ) {
 			this.now = this.end;
 			this.pos = this.state = 1;
@@ -458,7 +458,9 @@ jQuery.fx.prototype = {
 jQuery.extend( jQuery.fx, {
 	tick: function() {
 		var timers = jQuery.timers;
-
+		
+		jQuery.fx.now = jQuery.now();
+		
 		for ( var i = 0; i < timers.length; i++ ) {
 			if ( !timers[i]() ) {
 				timers.splice(i--, 1);
@@ -469,6 +471,10 @@ jQuery.extend( jQuery.fx, {
 			jQuery.fx.stop();
 		}
 	},
+	
+	// a flag that will cause .animate() to sync startTime, and step() to use the same time across the
+	// entire queue of animations each loop
+	sync: true,
 
 	interval: 13,
 
