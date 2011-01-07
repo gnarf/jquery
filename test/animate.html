@@ -25,6 +25,7 @@
 </head>
 
 <body id="body">
+  jQuery.fx.sync: <button id="toggle">On</button>
   <div class="container">
     <div class="animate" style='width: 5%; background-color: blue; height: 5px'>&nbsp;
     </div>
@@ -34,8 +35,19 @@
       for (var i = 0; i < 8; i++) {
         $('.animate').clone().appendTo('.container');
       }
-      $('.animate').animate({
-        marginLeft: 800
-      }, 2000);
+      function animateIt() {
+        $('.animate').animate({
+          marginLeft: 800
+        }, 500).animate({
+          marginLeft: 0
+        }, 500);        
+      }
+      animateIt();
+      $('#toggle').click(function() {
+        console.log(jQuery.fx.sync);
+        jQuery.fx.sync = !jQuery.fx.sync;
+        $(this).text(jQuery.fx.sync?'On':'Off');
+        animateIt();
+      });
     });
   </script></body>

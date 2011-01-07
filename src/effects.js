@@ -111,12 +111,13 @@ jQuery.fn.extend({
 			return this.each( optall.complete );
 		}
 		
-		// syncronize start times for large groups
-		if ( jQuery.fx.sync && !optall.startTime ) optall.startTime = jQuery.now();
-
 		return this[ optall.queue === false ? "each" : "queue" ](function() {
 			// XXX 'this' does not always have a nodeName when running the
 			// test suite
+			
+			if (jQuery.fx.sync && !optall.startTime) {
+				optall.startTime = jQuery.now();
+			}
 
 			var opt = jQuery.extend({}, optall), p,
 				isElement = this.nodeType === 1,
