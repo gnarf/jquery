@@ -115,14 +115,19 @@ jQuery.fn.extend({
 			// XXX 'this' does not always have a nodeName when running the
 			// test suite
 			
+			// Bug 7917 - ".animate() when used with large groups of elements is not in sync"
 			// we will set jQuery.fx.now if we are in sync mode to prevent short timers
 			// from ending prematurely / slow scripts from begining animations early
 			var hadNow = jQuery.fx.now;
 			
 			if ( jQuery.fx.sync ) {
+				// ensure there is a startTime that is syncronized with "now" - either the current
+				// step() that caused this animate to dequeue, or the current time 
 				if ( !optall.startTime ) {
 					optall.startTime = jQuery.fx.now || jQuery.now();
 				}
+				// if there isn't a "now" for the current step() ensure that the step() we end up 
+				// calling will be in sync with us
 				if ( !hadNow ) {
 					jQuery.fx.now = optall.startTime;
 				}
@@ -143,8 +148,10 @@ jQuery.fn.extend({
 				}
 
 				if ( prop[p] === "hide" && hidden || prop[p] === "show" && !hidden ) {
+
 					if ( !hadNow ) {
-						jQuery.fx.now = false;
+						// if we were responsible for setting this, unset it
+						jQuery.fx.now = 0;
 					}
 				 	return opt.complete.call(this);
 				}
@@ -227,7 +234,8 @@ jQuery.fn.extend({
 				}
 			});
 			if ( !hadNow ) {
-				jQuery.fx.now = false;
+				// again, clean up before leaving
+				jQuery.fx.now = 0;
 			}
 			// For JS strict compliance
 			return true;
@@ -408,6 +416,8 @@ jQuery.fx.prototype = {
 
 	// Each step of an animation
 	step: function( gotoEnd ) {
+		
+		// Bug 7917 - jQuery.fx.sync tells us to use jQuery.fx.now instead of the real time
 		var t = jQuery.fx.sync ? jQuery.fx.now || jQuery.now() : jQuery.now(), 
 			done = true;
 		
@@ -475,6 +485,7 @@ jQuery.extend( jQuery.fx, {
 	tick: function() {
 		var timers = jQuery.timers;
 		
+		// Bug 7917 - Store the "now" for this tick() for all step()s to use
 		jQuery.fx.now = jQuery.now();
 		
 		for ( var i = 0; i < timers.length; i++ ) {
@@ -487,11 +498,12 @@ jQuery.extend( jQuery.fx, {
 			jQuery.fx.stop();
 		}
 		
+		// and clean it up when we are done
 		jQuery.fx.now = 0;
 	},
 	
-	// a flag that will cause .animate() to sync startTime, and step() to use the same time across the
-	// entire queue of animations each loop
+	// a flag that will cause .animate() to sync startTime on large groups, and step() to use 
+	// the same time across the entire queue of animations each loop
 	sync: true,
 
 	interval: 13,
