@@ -110,7 +110,7 @@ jQuery.fn.extend({
 		if ( jQuery.isEmptyObject( prop ) ) {
 			return this.each( optall.complete );
 		}
-		
+
 		return this[ optall.queue === false ? "each" : "queue" ](function() {
 			// XXX 'this' does not always have a nodeName when running the
 			// test suite
