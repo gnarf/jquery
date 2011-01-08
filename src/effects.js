@@ -153,7 +153,7 @@ jQuery.fn.extend({
 						// if we were responsible for setting this, unset it
 						jQuery.fx.now = 0;
 					}
-				 	return opt.complete.call(this);
+					return opt.complete.call( this );
 				}
 
 				if ( isElement && ( p === "height" || p === "width" ) ) {
