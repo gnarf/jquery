@@ -170,13 +170,14 @@ jQuery.fn.extend({
 						if ( timers[i].elem === this && timers[i].fx.prop === p ) {
 							opt.overflow = timers[i].fx.options.overflow;
 							opt.orig = opt.orig || {};
+							opt.origCalc = timers[i].fx.options.origCalc;
 							opt.orig[p] = timers[i].fx.options.orig[p];
 							if ( timers[i].fx.options.show ) {
 								opt.hide = true;
 								prop[p] = 0;
 							} else if ( timers[i].fx.options.hide ) {
 								opt.show = true;
-								prop[p] = opt.orig[p];
+								prop[p] = opt.origCalc[p];
 							}
 							timers.splice(i,1);
 						}
@@ -335,6 +336,9 @@ jQuery.extend({
 		if ( !options.orig ) {
 			options.orig = {};
 		}
+		if ( !options.origCalc ) {
+			options.origCalc = {};
+		}
 	}
 
 });
@@ -387,6 +391,7 @@ jQuery.fx.prototype = {
 	show: function() {
 		// Remember where we started, so that we can go back to it later
 		this.options.orig[this.prop] = jQuery.style( this.elem, this.prop );
+		this.options.origCalc[this.prop] = jQuery.css( this.elem, this.prop );
 		this.options.show = true;
 
 		// Begin the animation
@@ -401,7 +406,8 @@ jQuery.fx.prototype = {
 	// Simple 'hide' function
 	hide: function() {
 		// Remember where we started, so that we can go back to it later
-		this.options.orig[this.prop] = jQuery.css( this.elem, this.prop );
+		this.options.orig[this.prop] = jQuery.style( this.elem, this.prop );
+		this.options.origCalc[this.prop] = jQuery.css( this.elem, this.prop );
 		this.options.hide = true;
 
 		// Begin the animation
