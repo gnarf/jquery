@@ -106,7 +106,7 @@ jQuery.fn.extend({
 
 	animate: function( prop, speed, easing, callback ) {
 		var optall = jQuery.speed(speed, easing, callback);
-
+		prop = $.extend({}, prop);
 		if ( jQuery.isEmptyObject( prop ) ) {
 			return this.each( optall.complete );
 		}
@@ -114,7 +114,6 @@ jQuery.fn.extend({
 		return this[ optall.queue === false ? "each" : "queue" ](function() {
 			// XXX 'this' does not always have a nodeName when running the
 			// test suite
-
 			var opt = jQuery.extend({}, optall), p,
 				isElement = this.nodeType === 1,
 				hidden = isElement && jQuery(this).is(":hidden"),
@@ -163,6 +162,26 @@ jQuery.fn.extend({
 						}
 					}
 				}
+				if ( prop[p] === 'toggle' ) {
+					var timers = jQuery.timers;
+					opt.toggle = true;
+					// hunt for an existing show or hide timer for this property
+					for ( var i = timers.length - 1; i >= 0; i-- ) {
+						if ( timers[i].elem === this && timers[i].fx.prop === p ) {
+							opt.overflow = timers[i].fx.options.overflow;
+							opt.orig = opt.orig || {};
+							opt.orig[p] = timers[i].fx.options.orig[p];
+							if ( timers[i].fx.options.show ) {
+								opt.hide = true;
+								prop[p] = 0;
+							} else if ( timers[i].fx.options.hide ) {
+								opt.show = true;
+								prop[p] = opt.orig[p];
+							}
+							timers.splice(i,1);
+						}
+					}
+				}
 
 				if ( jQuery.isArray( prop[p] ) ) {
 					// Create (if needed) and add to specialEasing
@@ -178,8 +197,8 @@ jQuery.fn.extend({
 			opt.curAnim = jQuery.extend({}, prop);
 
 			jQuery.each( prop, function( name, val ) {
+				
 				var e = new jQuery.fx( self, opt, name );
-
 				if ( rfxtypes.test(val) ) {
 					e[ val === "toggle" ? hidden ? "show" : "hide" : val ]( prop );
 
@@ -357,6 +376,7 @@ jQuery.fx.prototype = {
 		}
 
 		t.elem = this.elem;
+		t.fx = this;
 
 		if ( t() && jQuery.timers.push(t) && !timerId ) {
 			timerId = setInterval(fx.tick, fx.interval);
@@ -381,7 +401,7 @@ jQuery.fx.prototype = {
 	// Simple 'hide' function
 	hide: function() {
 		// Remember where we started, so that we can go back to it later
-		this.options.orig[this.prop] = jQuery.style( this.elem, this.prop );
+		this.options.orig[this.prop] = jQuery.css( this.elem, this.prop );
 		this.options.hide = true;
 
 		// Begin the animation
