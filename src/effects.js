@@ -162,12 +162,13 @@ jQuery.fn.extend({
 						}
 					}
 				}
-				if ( prop[p] === 'toggle' ) {
+				if ( optall.queue === false && prop[p] === 'toggle' ) {
 					var timers = jQuery.timers;
 					opt.toggle = true;
 					// hunt for an existing show or hide timer for this property
 					for ( var i = timers.length - 1; i >= 0; i-- ) {
 						if ( timers[i].elem === this && timers[i].fx.prop === p ) {
+							console.log(timers[i](-1));
 							opt.overflow = timers[i].fx.options.overflow;
 							opt.orig = opt.orig || {};
 							opt.origCalc = timers[i].fx.options.origCalc;
@@ -179,6 +180,7 @@ jQuery.fn.extend({
 								opt.show = true;
 								prop[p] = opt.origCalc[p];
 							}
+							timers[i].fx = undefined;
 							timers.splice(i,1);
 						}
 					}
@@ -376,7 +378,7 @@ jQuery.fx.prototype = {
 		this.pos = this.state = 0;
 
 		function t( gotoEnd ) {
-			return self.step(gotoEnd);
+			return gotoEnd < 0 ? self : self.step(gotoEnd);
 		}
 
 		t.elem = this.elem;
@@ -457,7 +459,7 @@ jQuery.fx.prototype = {
 				// Execute the complete function
 				this.options.complete.call( this.elem );
 			}
-
+			this.fx = undefined;
 			return false;
 
 		} else {
