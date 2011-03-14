@@ -1,4 +1,4 @@
-module("core");
+module("core", { teardown: moduleTeardown });
 
 test("Basic requirements", function() {
 	expect(7);
@@ -12,7 +12,7 @@ test("Basic requirements", function() {
 });
 
 test("jQuery()", function() {
-	expect(23);
+	expect(24);
 
 	// Basic constructor's behavior
 
@@ -21,7 +21,7 @@ test("jQuery()", function() {
 	equals( jQuery(null).length, 0, "jQuery(null) === jQuery([])" );
 	equals( jQuery("").length, 0, "jQuery('') === jQuery([])" );
 
-	var obj = jQuery("div")
+	var obj = jQuery("div");
 	equals( jQuery(obj).selector, "div", "jQuery(jQueryObj) == jQueryObj" );
 
 		// can actually yield more than one, when iframes are included, the window is an array as well
@@ -84,6 +84,17 @@ test("jQuery()", function() {
 
 	exec = true;
 	elem.click();
+
+	// manually clean up detached elements
+	elem.remove();
+
+	for ( var i = 0; i < 3; ++i ) {
+		elem = jQuery("<input type='text' value='TEST' />");
+	}
+	equals( elem[0].defaultValue, "TEST", "Ensure cached nodes are cloned properly (Bug #6655)" );
+
+	// manually clean up detached elements
+	elem.remove();
 });
 
 test("selector state", function() {
@@ -526,29 +537,29 @@ test("end()", function() {
 
 test("length", function() {
 	expect(1);
-	equals( jQuery("p").length, 6, "Get Number of Elements Found" );
+	equals( jQuery("#main p").length, 6, "Get Number of Elements Found" );
 });
 
 test("size()", function() {
 	expect(1);
-	equals( jQuery("p").size(), 6, "Get Number of Elements Found" );
+	equals( jQuery("#main p").size(), 6, "Get Number of Elements Found" );
 });
 
 test("get()", function() {
 	expect(1);
-	same( jQuery("p").get(), q("firstp","ap","sndp","en","sap","first"), "Get All Elements" );
+	same( jQuery("#main p").get(), q("firstp","ap","sndp","en","sap","first"), "Get All Elements" );
 });
 
 test("toArray()", function() {
 	expect(1);
-	same( jQuery("p").toArray(),
+	same( jQuery("#main p").toArray(),
 		q("firstp","ap","sndp","en","sap","first"),
 		"Convert jQuery object to an Array" )
 })
 
 test("get(Number)", function() {
 	expect(2);
-	equals( jQuery("p").get(0), document.getElementById("firstp"), "Get A Single Element" );
+	equals( jQuery("#main p").get(0), document.getElementById("firstp"), "Get A Single Element" );
 	strictEqual( jQuery("#firstp").get(1), undefined, "Try get with index larger elements count" );
 });
 
@@ -903,158 +914,123 @@ test("jQuery.parseJSON", function(){
 	}
 });
 
-test("jQuery._Deferred()", function() {
+test("jQuery.sub() - Static Methods", function(){
+    expect(18);
+    var Subclass = jQuery.sub();
+    Subclass.extend({
+        topLevelMethod: function() {return this.debug;},
+        debug: false,
+        config: {
+            locale: 'en_US'
+        },
+        setup: function(config) {
+            this.extend(true, this.config, config);
+        }
+    });
+    Subclass.fn.extend({subClassMethod: function() { return this;}});
 
-	expect( 10 );
+    //Test Simple Subclass
+    ok(Subclass.topLevelMethod() === false, 'Subclass.topLevelMethod thought debug was true');
+    ok(Subclass.config.locale == 'en_US', Subclass.config.locale + ' is wrong!');
+    same(Subclass.config.test, undefined, 'Subclass.config.test is set incorrectly');
+    equal(jQuery.ajax, Subclass.ajax, 'The subclass failed to get all top level methods');
 
-	var deferred,
-		object,
-		test;
+    //Create a SubSubclass
+    var SubSubclass = Subclass.sub();
 
-	deferred = jQuery._Deferred();
+    //Make Sure the SubSubclass inherited properly
+    ok(SubSubclass.topLevelMethod() === false, 'SubSubclass.topLevelMethod thought debug was true');
+    ok(SubSubclass.config.locale == 'en_US', SubSubclass.config.locale + ' is wrong!');
+    same(SubSubclass.config.test, undefined, 'SubSubclass.config.test is set incorrectly');
+    equal(jQuery.ajax, SubSubclass.ajax, 'The subsubclass failed to get all top level methods');
 
-	test = false;
+    //Modify The Subclass and test the Modifications
+    SubSubclass.fn.extend({subSubClassMethod: function() { return this;}});
+    SubSubclass.setup({locale: 'es_MX', test: 'worked'});
+    SubSubclass.debug = true;
+    SubSubclass.ajax = function() {return false;};
+    ok(SubSubclass.topLevelMethod(), 'SubSubclass.topLevelMethod thought debug was false');
+    same(SubSubclass(document).subClassMethod, Subclass.fn.subClassMethod, 'Methods Differ!');
+    ok(SubSubclass.config.locale == 'es_MX', SubSubclass.config.locale + ' is wrong!');
+    ok(SubSubclass.config.test == 'worked', 'SubSubclass.config.test is set incorrectly');
+    notEqual(jQuery.ajax, SubSubclass.ajax, 'The subsubclass failed to get all top level methods');
 
-	deferred.done( function( value ) {
-		equals( value , "value" , "Test pre-resolve callback" );
-		test = true;
-	} );
-
-	deferred.resolve( "value" );
-
-	ok( test , "Test pre-resolve callbacks called right away" );
-
-	test = false;
-
-	deferred.done( function( value ) {
-		equals( value , "value" , "Test post-resolve callback" );
-		test = true;
-	} );
-
-	ok( test , "Test post-resolve callbacks called right away" );
-
-	deferred.cancel();
-
-	test = true;
-
-	deferred.done( function() {
-		ok( false , "Cancel was ignored" );
-		test = false;
-	} );
-
-	ok( test , "Test cancel" );
-
-	deferred = jQuery._Deferred().resolve();
-
-	try {
-		deferred.done( function() {
-			throw "Error";
-		} , function() {
-			ok( true , "Test deferred do not cancel on exception" );
-		} );
-	} catch( e ) {
-		strictEqual( e , "Error" , "Test deferred propagates exceptions");
-		deferred.done();
-	}
-
-	test = "";
-	deferred = jQuery._Deferred().done( function() {
-
-		test += "A";
-
-	}, function() {
-
-		test += "B";
-
-	} ).resolve();
-
-	strictEqual( test , "AB" , "Test multiple done parameters" );
-
-	test = "";
-
-	deferred.done( function() {
-
-		deferred.done( function() {
-
-			test += "C";
-
-		} );
-
-		test += "A";
-
-	}, function() {
-
-		test += "B";
-	} );
-
-	strictEqual( test , "ABC" , "Test done callbacks order" );
-
-	deferred = jQuery._Deferred();
-
-	deferred.fire( jQuery , [ document ] ).done( function( doc ) {
-		ok( this === jQuery && arguments.length === 1 && doc === document , "Test fire context & args" );
-	});
+    //This shows that the modifications to the SubSubClass did not bubble back up to it's superclass
+    ok(Subclass.topLevelMethod() === false, 'Subclass.topLevelMethod thought debug was true');
+    ok(Subclass.config.locale == 'en_US', Subclass.config.locale + ' is wrong!');
+    same(Subclass.config.test, undefined, 'Subclass.config.test is set incorrectly');
+    same(Subclass(document).subSubClassMethod, undefined, 'subSubClassMethod set incorrectly');
+    equal(jQuery.ajax, Subclass.ajax, 'The subclass failed to get all top level methods');
 });
 
-test("jQuery.Deferred()", function() {
+test("jQuery.sub() - .fn Methods", function(){
+	expect(378);
 
-	expect( 4 );
+	var Subclass = jQuery.sub(),
+			SubclassSubclass = Subclass.sub(),
+			jQueryDocument = jQuery(document),
+			selectors, contexts, methods, method, arg, description;
 
-	jQuery.Deferred( function( defer ) {
-		strictEqual( this , defer , "Defer passed as this & first argument" );
-		this.resolve( "done" );
-	}).then( function( value ) {
-		strictEqual( value , "done" , "Passed function executed" );
-	});
+	jQueryDocument.toString = function(){ return 'jQueryDocument'; };
 
-	jQuery.Deferred().resolve().then( function() {
-		ok( true , "Success on resolve" );
-	}, function() {
-		ok( false , "Error on resolve" );
-	});
+	Subclass.fn.subclassMethod = function(){};
+	SubclassSubclass.fn.subclassSubclassMethod = function(){};
 
-	jQuery.Deferred().reject().then( function() {
-		ok( false , "Success on reject" );
-	}, function() {
-		ok( true , "Error on reject" );
-	});
-});
+	selectors = [
+		'body',
+		'html, body',
+		'<div></div>'
+	];
 
-test("jQuery.when()", function() {
+	methods = [ // all methods that return a new jQuery instance
+		['eq', 1],
+		['add', document],
+		['end'],
+		['has'],
+		['closest', 'div'],
+		['filter', document],
+		['find', 'div']
+	];
 
-	expect( 21 );
+	contexts = [undefined, document, jQueryDocument];
 
-	// Some other objects
-	jQuery.each( {
+	jQuery.each(selectors, function(i, selector){
 
-		"an empty string": "",
-		"a non-empty string": "some string",
-		"zero": 0,
-		"a number other than zero": 1,
-		"true": true,
-		"false": false,
-		"null": null,
-		"undefined": undefined,
-		"a plain object": {}
+		jQuery.each(methods, function(){
+			method = this[0];
+			arg = this[1];
 
-	} , function( message , value ) {
+			jQuery.each(contexts, function(i, context){
 
-		ok( jQuery.isFunction( jQuery.when( value ).then( function( resolveValue ) {
-			strictEqual( resolveValue , value , "Test the promise was resolved with " + message );
-		} ).promise ) , "Test " + message + " triggers the creation of a new Promise" );
+				description = '("'+selector+'", '+context+').'+method+'('+(arg||'')+')';
 
-	} );
+				same(
+					jQuery(selector, context)[method](arg).subclassMethod, undefined,
+					'jQuery'+description+' doesnt have Subclass methods'
+				);
+				same(
+					jQuery(selector, context)[method](arg).subclassSubclassMethod, undefined,
+					'jQuery'+description+' doesnt have SubclassSubclass methods'
+				);
+				same(
+					Subclass(selector, context)[method](arg).subclassMethod, Subclass.fn.subclassMethod,
+					'Subclass'+description+' has Subclass methods'
+				);
+				same(
+					Subclass(selector, context)[method](arg).subclassSubclassMethod, undefined,
+					'Subclass'+description+' doesnt have SubclassSubclass methods'
+				);
+				same(
+					SubclassSubclass(selector, context)[method](arg).subclassMethod, Subclass.fn.subclassMethod,
+					'SubclassSubclass'+description+' has Subclass methods'
+				);
+				same(
+					SubclassSubclass(selector, context)[method](arg).subclassSubclassMethod, SubclassSubclass.fn.subclassSubclassMethod,
+					'SubclassSubclass'+description+' has SubclassSubclass methods'
+				);
 
-	var cache, i;
-
-	for( i = 1 ; i < 4 ; i++ ) {
-		jQuery.when( cache || jQuery.Deferred( function() {
-			this.resolve( i );
-		}) ).then( function( value ) {
-			strictEqual( value , 1 , "Function executed" + ( i > 1 ? " only once" : "" ) );
-			cache = value;
-		}, function() {
-			ok( false , "Fail called" );
+			});
 		});
-	}
+	});
+
 });

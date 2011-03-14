@@ -1,23 +1,17 @@
-module("event");
+module("event", { teardown: moduleTeardown });
 
 test("null or undefined handler", function() {
 	expect(2);
-  // Supports Fixes bug #7229
-  try {
+	// Supports Fixes bug #7229
+	try {
+		jQuery("#firstp").click(null);
+		ok(true, "Passing a null handler will not throw an exception");
+	} catch (e) {}
 
-    jQuery("#firstp").click(null);
-
-    ok(true, "Passing a null handler will not throw an exception");
-
-  } catch (e) {}
-
-  try {
-
-    jQuery("#firstp").click(undefined);
-
-    ok(true, "Passing an undefined handler will not throw an exception");
-
-  } catch (e) {}
+	try {
+		jQuery("#firstp").click(undefined);
+		ok(true, "Passing an undefined handler will not throw an exception");
+	} catch (e) {}
 });
 
 test("bind(), with data", function() {
@@ -28,7 +22,7 @@ test("bind(), with data", function() {
 	};
 	jQuery("#firstp").bind("click", {foo: "bar"}, handler).click().unbind("click", handler);
 
-	ok( !jQuery.data(jQuery("#firstp")[0], "events"), "Event handler unbound when using data." );
+	ok( !jQuery._data(jQuery("#firstp")[0], "events"), "Event handler unbound when using data." );
 });
 
 test("click(), with data", function() {
@@ -39,7 +33,7 @@ test("click(), with data", function() {
 	};
 	jQuery("#firstp").click({foo: "bar"}, handler).click().unbind("click", handler);
 
-	ok( !jQuery.data(jQuery("#firstp")[0], "events"), "Event handler unbound when using data." );
+	ok( !jQuery._data(jQuery("#firstp")[0], "events"), "Event handler unbound when using data." );
 });
 
 test("bind(), with data, trigger with data", function() {
@@ -80,6 +74,9 @@ test("bind(), multiple events at once and namespaces", function() {
 	cur = "focusin";
 	div.trigger("focusin.a");
 
+	// manually clean up detached elements
+	div.remove();
+
 	div = jQuery("<div/>").bind("click mouseover", obj, function(e) {
 		equals( e.type, cur, "Verify right multi event was fired." );
 		equals( e.data, obj, "Make sure the data came in correctly." );
@@ -91,6 +88,9 @@ test("bind(), multiple events at once and namespaces", function() {
 	cur = "mouseover";
 	div.trigger("mouseover");
 
+	// manually clean up detached elements
+	div.remove();
+
 	div = jQuery("<div/>").bind("focusin.a focusout.b", function(e) {
 		equals( e.type, cur, "Verify right multi event was fired." );
 	});
@@ -100,6 +100,9 @@ test("bind(), multiple events at once and namespaces", function() {
 
 	cur = "focusout";
 	div.trigger("focusout.b");
+
+	// manually clean up detached elements
+	div.remove();
 });
 
 test("bind(), namespace with special add", function() {
@@ -295,14 +298,14 @@ test("live/delegate immediate propagation", function() {
 	$p.undelegate( "click" );
 });
 
-test("bind/delegate bubbling, isDefaultPrevented (Bug #7793)", function() {
+test("bind/delegate bubbling, isDefaultPrevented", function() {
 	expect(2);
 	var $anchor2 = jQuery( "#anchor2" ),
 		$main = jQuery( "#main" ),
 		fakeClick = function($jq) {
 			// Use a native click so we don't get jQuery simulated bubbling
 			if ( document.createEvent ) {
-				var e = document.createEvent( "MouseEvents" );
+				var e = document.createEvent( 'MouseEvents' );
 				e.initEvent( "click", true, true );
 				$jq[0].dispatchEvent(e);
 			}
@@ -314,7 +317,15 @@ test("bind/delegate bubbling, isDefaultPrevented (Bug #7793)", function() {
 		e.preventDefault();
 	});
 	$main.delegate("#foo", "click", function(e) {
-		equals( e.isDefaultPrevented(), true, "isDefaultPrevented true passed to bubbled event" );
+		var orig = e.originalEvent;
+
+		if ( typeof(orig.defaultPrevented) === "boolean" || typeof(orig.returnValue) === "boolean" || orig.getPreventDefault ) {
+			equals( e.isDefaultPrevented(), true, "isDefaultPrevented true passed to bubbled event" );
+
+		} else {
+			// Opera < 11 doesn't implement any interface we can use, so give it a pass
+			ok( true, "isDefaultPrevented not supported by this browser, test skipped" );
+		}
 	});
 	fakeClick( $anchor2 );
 	$anchor2.unbind( "click" );
@@ -350,38 +361,47 @@ test("bind(), trigger change on select", function() {
 	}).trigger('change');
 });
 
-test("bind(), namespaced events, cloned events", function() {
-	expect(6);
+test("bind(), namespaced events, cloned events", 18, function() {
+	var firstp = jQuery( "#firstp" );
 
-	jQuery("#firstp").bind("custom.test",function(e){
-		ok(true, "Custom event triggered");
+	firstp.bind("custom.test",function(e){
+		ok(false, "Custom event triggered");
 	});
 
-	jQuery("#firstp").bind("click",function(e){
+	firstp.bind("click",function(e){
 		ok(true, "Normal click triggered");
+		equal( e.type + e.namespace, "click", "Check that only click events trigger this fn" );
 	});
 
-	jQuery("#firstp").bind("click.test",function(e){
-		ok(true, "Namespaced click triggered");
+	firstp.bind("click.test",function(e){
+		var check = "click";
+		ok( true, "Namespaced click triggered" );
+		if ( e.namespace ) {
+			check += "test";
+		}
+		equal( e.type + e.namespace, check, "Check that only click/click.test events trigger this fn" );
 	});
 
-	// Trigger both bound fn (2)
-	jQuery("#firstp").trigger("click");
+	//clone(true) element to verify events are cloned correctly
+	firstp = firstp.add( firstp.clone( true ).attr( "id", "firstp2" ).insertBefore( firstp ) );
 
-	// Trigger one bound fn (1)
-	jQuery("#firstp").trigger("click.test");
+	// Trigger both bound fn (8)
+	firstp.trigger("click");
+
+	// Trigger one bound fn (4)
+	firstp.trigger("click.test");
 
 	// Remove only the one fn
-	jQuery("#firstp").unbind("click.test");
+	firstp.unbind("click.test");
 
-	// Trigger the remaining fn (1)
-	jQuery("#firstp").trigger("click");
+	// Trigger the remaining fn (4)
+	firstp.trigger("click");
 
-	// Remove the remaining fn
-	jQuery("#firstp").unbind(".test");
+	// Remove the remaining namespaced fn
+	firstp.unbind(".test");
 
-	// Trigger the remaining fn (0)
-	jQuery("#firstp").trigger("custom");
+	// Try triggering the custom event (0)
+	firstp.trigger("custom");
 
 	// using contents will get comments regular, text, and comment nodes
 	jQuery("#nonnodes").contents().bind("tester", function () {
@@ -389,7 +409,7 @@ test("bind(), namespaced events, cloned events", function() {
 	}).trigger("tester");
 
 	// Make sure events stick with appendTo'd elements (which are cloned) #2027
-	jQuery("<a href='#fail' class='test'>test</a>").click(function(){ return false; }).appendTo("p");
+	jQuery("<a href='#fail' class='test'>test</a>").click(function(){ return false; }).appendTo("#main");
 	ok( jQuery("a.test:first").triggerHandler("click") === false, "Handler is bound to appendTo'd elements" );
 });
 
@@ -454,7 +474,7 @@ test("bind(), multi-namespaced events", function() {
 test("bind(), with same function", function() {
 	expect(2)
 
-	var count = 0 ,  func = function(){
+	var count = 0, func = function(){
 		count++;
 	};
 
@@ -505,7 +525,7 @@ test("bind(), with different this object", function() {
 		.bind("click", jQuery.proxy(handler1, thisObject)).click().unbind("click", handler1)
 		.bind("click", data, jQuery.proxy(handler2, thisObject)).click().unbind("click", handler2);
 
-	ok( !jQuery.data(jQuery("#firstp")[0], "events"), "Event handler unbound when using different this object and data." );
+	ok( !jQuery._data(jQuery("#firstp")[0], "events"), "Event handler unbound when using different this object and data." );
 });
 
 test("bind(name, false), unbind(name, false)", function() {
@@ -525,10 +545,13 @@ test("bind(name, false), unbind(name, false)", function() {
 	jQuery("#ap").unbind("click", false);
 	jQuery("#ap").trigger("click");
 	equals( main, 1, "Verify that the trigger happened correctly." );
+
+	// manually clean up events from elements outside the fixture
+	jQuery("#main").unbind("click");
 });
 
 test("bind()/trigger()/unbind() on plain object", function() {
-	expect( 8 );
+	expect( 7 );
 
 	var obj = {};
 
@@ -547,10 +570,9 @@ test("bind()/trigger()/unbind() on plain object", function() {
 		}
 	});
 
-	var events = jQuery(obj).data("__events__");
+	var events = jQuery._data(obj, "events");
 	ok( events, "Object has events bound." );
 	equals( obj.events, undefined, "Events object on plain objects is not events" );
-	equals( typeof events, "function", "'events' expando is a function on plain objects." );
 	equals( obj.test, undefined, "Make sure that test event is not on the plain object." );
 	equals( obj.handle, undefined, "Make sure that the event handler is not on the plain object." );
 
@@ -567,7 +589,9 @@ test("bind()/trigger()/unbind() on plain object", function() {
 	// Make sure it doesn't complain when no events are found
 	jQuery(obj).unbind("test");
 
-	equals( obj.__events__, undefined, "Make sure events object is removed" );
+	equals( obj && obj[ jQuery.expando ] &&
+			obj[ jQuery.expando ][ jQuery.expando ] &&
+			obj[ jQuery.expando ][ jQuery.expando ].events, undefined, "Make sure events object is removed" );
 });
 
 test("unbind(type)", function() {
@@ -591,18 +615,18 @@ test("unbind(type)", function() {
 
 	message = "unbind many with function";
 	$elem.bind('error1 error2',error)
-		 .unbind('error1 error2', error )
-		 .trigger('error1').triggerHandler('error2');
+		.unbind('error1 error2', error )
+		.trigger('error1').triggerHandler('error2');
 
 	message = "unbind many"; // #3538
 	$elem.bind('error1 error2',error)
-		 .unbind('error1 error2')
-		 .trigger('error1').triggerHandler('error2');
+		.unbind('error1 error2')
+		.trigger('error1').triggerHandler('error2');
 
 	message = "unbind without a type or handler";
 	$elem.bind("error1 error2.test",error)
-		 .unbind()
-		 .trigger("error1").triggerHandler("error2");
+		.unbind()
+		.trigger("error1").triggerHandler("error2");
 });
 
 test("unbind(eventObject)", function() {
@@ -661,12 +685,17 @@ test("hover()", function() {
 
 test("trigger() shortcuts", function() {
 	expect(6);
-	jQuery('<li><a href="#">Change location</a></li>').prependTo('#firstUL').find('a').bind('click', function() {
+
+	var elem = jQuery('<li><a href="#">Change location</a></li>').prependTo('#firstUL');
+	elem.find('a').bind('click', function() {
 		var close = jQuery('spanx', this); // same with jQuery(this).find('span');
 		equals( close.length, 0, "Context element does not exist, length must be zero" );
 		ok( !close[0], "Context element does not exist, direct access to element must return undefined" );
 		return false;
 	}).click();
+
+	// manually clean up detached elements
+	elem.remove();
 
 	jQuery("#check1").click(function() {
 		ok( true, "click event handler for checkbox gets fired twice, see #815" );
@@ -686,9 +715,12 @@ test("trigger() shortcuts", function() {
 	jQuery('#simon1').click();
 	equals( clickCounter, 1, "Check that click, triggers onclick event handler on an a tag also" );
 
-	jQuery('<img />').load(function(){
+	elem = jQuery('<img />').load(function(){
 		ok( true, "Trigger the load event, using the shortcut .load() (#2819)");
 	}).load();
+
+	// manually clean up detached elements
+	elem.remove();
 });
 
 test("trigger() bubbling", function() {
@@ -723,6 +755,10 @@ test("trigger() bubbling", function() {
 	equals( body, 2, "ap bubble" );
 	equals( main, 1, "ap bubble" );
 	equals( ap, 1, "ap bubble" );
+
+	// manually clean up events from elements outside the fixture
+	jQuery(document).unbind("click");
+	jQuery("html, body, #main").unbind("click");
 });
 
 test("trigger(type, [data], [fn])", function() {
@@ -766,7 +802,7 @@ test("trigger(type, [data], [fn])", function() {
 
 	pass = true;
 	try {
-		jQuery('table:first').bind('test:test', function(){}).trigger('test:test');
+		jQuery('#main table:first').bind('test:test', function(){}).trigger('test:test');
 	} catch (e) {
 		pass = false;
 	}
@@ -947,8 +983,11 @@ test("toggle(Function, Function, ...)", function() {
 	equals( turn, 2, "Trying toggle with 3 functions, attempt 5 yields 2");
 
 	$div.unbind('click',fns[0]);
-	var data = jQuery.data( $div[0], 'events' );
+	var data = jQuery._data( $div[0], 'events' );
 	ok( !data, "Unbinding one function from toggle unbinds them all");
+
+	// manually clean up detached elements
+	$div.remove();
 
 	// Test Multi-Toggles
 	var a = [], b = [];
@@ -965,6 +1004,9 @@ test("toggle(Function, Function, ...)", function() {
 	$div.click();
 	same( a, [1,2,1], "Check that a click worked with a second toggle, second click." );
 	same( b, [1,2], "Check that a click worked with a second toggle, second click." );
+
+	// manually clean up detached elements
+	$div.remove();
 });
 
 test(".live()/.die()", function() {
@@ -1065,7 +1107,7 @@ test(".live()/.die()", function() {
 	equals( clicked, 2, "live with a context" );
 
 	// Make sure the event is actually stored on the context
-	ok( jQuery.data(container, "events").live, "live with a context" );
+	ok( jQuery._data(container, "events").live, "live with a context" );
 
 	// Test unbinding with a different context
 	jQuery("#foo", container).die("click");
@@ -1275,6 +1317,9 @@ test("live with multiple events", function(){
 	div.trigger("submit");
 
 	equals( count, 2, "Make sure both the click and submit were triggered." );
+
+	// manually clean up events from elements outside the fixture
+	div.die();
 });
 
 test("live with namespaces", function(){
@@ -1410,6 +1455,8 @@ test("live with change", function(){
 });
 
 test("live with submit", function() {
+	expect(5);
+
 	var count1 = 0, count2 = 0;
 
 	jQuery("#testForm").live("submit", function(ev) {
@@ -1426,7 +1473,16 @@ test("live with submit", function() {
 	equals( count1, 1, "Verify form submit." );
 	equals( count2, 1, "Verify body submit." );
 
+	jQuery("#testForm input[name=sub1]").live("click", function(ev) {
+		ok( true, "cancelling submit still calls click handler" );
+	});
+
+	jQuery("#testForm input[name=sub1]")[0].click();
+	equals( count1, 2, "Verify form submit." );
+	equals( count2, 2, "Verify body submit." );
+
 	jQuery("#testForm").die("submit");
+	jQuery("#testForm input[name=sub1]").die("click");
 	jQuery("body").die("submit");
 });
 
@@ -1578,7 +1634,7 @@ test(".delegate()/.undelegate()", function() {
 	equals( clicked, 2, "delegate with a context" );
 
 	// Make sure the event is actually stored on the context
-	ok( jQuery.data(container, "events").live, "delegate with a context" );
+	ok( jQuery._data(container, "events").live, "delegate with a context" );
 
 	// Test unbinding with a different context
 	jQuery("#main").undelegate("#foo", "click");
@@ -1907,27 +1963,7 @@ test("window resize", function() {
 		ok( true, "Resize event fired." );
 	}).resize().unbind("resize");
 
-	ok( !jQuery(window).data("__events__"), "Make sure all the events are gone." );
-});
-
-test("focusin bubbles", function() {
-	//create an input and focusin on it
-	var input = jQuery("<input/>"), order = 0;
-
-	input.prependTo("body");
-
-	jQuery("body").bind("focusin.focusinBubblesTest",function(){
-		equals(1,order++,"focusin on the body second")
-	});
-
-	input.bind("focusin.focusinBubblesTest",function(){
-		equals(0,order++,"focusin on the element first")
-	});
-
-	input[0].focus();
-	input.remove();
-
-	jQuery("body").unbind("focusin.focusinBubblesTest");
+	ok( !jQuery._data(window, "__events__"), "Make sure all the events are gone." );
 });
 
 /*
