@@ -406,11 +406,10 @@ jQuery.fx.prototype = {
 
 	// Each step of an animation
 	step: function( gotoEnd ) {
-		
-		// Bug 7917 - jQuery.fx.sync tells us to use jQuery.fx.now instead of the real time
+
 		var t = fxNow || makeFxNow(),
 			done = true;
-		
+
 		if ( gotoEnd || t >= this.options.duration + this.startTime ) {
 			this.now = this.end;
 			this.pos = this.state = 1;
@@ -474,7 +473,7 @@ jQuery.fx.prototype = {
 jQuery.extend( jQuery.fx, {
 	tick: function() {
 		var timers = jQuery.timers;
-		
+
 		for ( var i = 0; i < timers.length; i++ ) {
 			if ( !timers[i]() ) {
 				timers.splice(i--, 1);
@@ -484,12 +483,8 @@ jQuery.extend( jQuery.fx, {
 		if ( !timers.length ) {
 			jQuery.fx.stop();
 		}
-		
+
 	},
-	
-	// a flag that will cause .animate() to sync startTime on large groups, and step() to use 
-	// the same time across the entire queue of animations each loop
-	sync: false,
 
 	interval: 13,
 
