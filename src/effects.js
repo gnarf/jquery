@@ -129,7 +129,7 @@ jQuery.fn.extend({
 		// Do not change referenced properties as per-property easing will be lost
 		prop = jQuery.extend( {}, prop );
 
-		return this[ optall.queue === false ? "each" : "queue" ](function() {
+		function animate() {
 			// XXX 'this' does not always have a nodeName when running the
 			// test suite
 
@@ -243,7 +243,9 @@ jQuery.fn.extend({
 
 			// For JS strict compliance
 			return true;
-		});
+		}
+
+		return optall.queue === false ? this.each( animate ) : this.queue( optall.queue || "fx", animate );
 	},
 
 	stop: function( clearQueue, gotoEnd ) {
@@ -335,7 +337,7 @@ jQuery.extend({
 			}
 
 			if ( opt.queue !== false ) {
-				jQuery.dequeue( this );
+				jQuery.dequeue( this, opt.queue || "fx" );
 			} else if ( noUnmark !== false ) {
 				jQuery._unmark( this );
 			}
