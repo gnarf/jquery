@@ -407,11 +407,16 @@ jQuery.fx.prototype = {
 		}
 
 		t.elem = this.elem;
+		t.endTime = this.startTime + this.options.duration;
 
 		if ( t() && jQuery.timers.push(t) && !timerId ) {
 			// Use requestAnimationFrame instead of setInterval if available
 			if ( requestAnimationFrame ) {
-				timerId = 1;
+
+				// tickExpired will only run animations that are past their duration
+				timerId = setInterval( function() {
+					fx.tick( true );
+				}, fx.interval );
 				raf = function() {
 					// When timerId gets set to null at any point, this stops
 					if ( timerId ) {
@@ -520,8 +525,15 @@ jQuery.fx.prototype = {
 };
 
 jQuery.extend( jQuery.fx, {
-	tick: function() {
+	tick: function( expiredOnly ) {
+		var timer,
+			time = fxNow || createFxNow();
+
 		for ( var timers = jQuery.timers, i = 0 ; i < timers.length ; ++i ) {
+			timer = timers[i];
+			if ( expiredOnly && timer.endTime < time ) {
+				continue;
+			}
 			if ( !timers[i]() ) {
 				timers.splice(i--, 1);
 			}
