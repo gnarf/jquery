@@ -455,9 +455,14 @@ jQuery.fn.extend({
 		return this;
 	},
 	fadeTo: function( speed, to, easing, callback ) {
-		return this.filter(function() {
+
+		// show any hidden elements after setting opacity to 0
+		this.filter(function() {
 			return jQuery.css( this, "display" ) === "none";
-		}).css( "opacity", 0 ).show().end().animate( {opacity: to}, speed, easing, callback );
+		}).css( "opacity", 0 ).show();
+
+		// animate to the value specified
+		return this.animate({ opacity: to }, speed, easing, callback );
 	},
 	animate: function( prop, speed, easing, callback ) {
 		var optall = jQuery.speed( speed, easing, callback ),
