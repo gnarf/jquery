@@ -253,7 +253,7 @@ Animation.prefilter(function( elem, props, opts ) {
 	var index, prop, value, length, dataShow, tween,
 		orig = {},
 		handled = [],
-		hidden = jQuery( elem ).is(":hidden");
+		hidden = elem.nodeType && jQuery.css( elem, "display" ) === "none";
 
 	for ( index in props ) {
 		value = props[ index ];
@@ -444,7 +444,7 @@ jQuery.fn.extend({
 
 		} else if ( fn == null || bool ) {
 			this.each(function() {
-				var state = bool ? fn : jQuery( this ).is(":hidden");
+				var state = bool ? fn : jQuery.css( this, "display" ) === "none";
 				showHide([ this ], state );
 			});
 
@@ -455,8 +455,9 @@ jQuery.fn.extend({
 		return this;
 	},
 	fadeTo: function( speed, to, easing, callback ) {
-		return this.filter(":hidden").css("opacity", 0).show().end()
-					.animate({opacity: to}, speed, easing, callback);
+		return this.filter(function() {
+			return jQuery.css( this, "display" ) === "none";
+		}).css( "opacity", 0 ).show().end().animate( {opacity: to}, speed, easing, callback );
 	},
 	animate: function( prop, speed, easing, callback ) {
 		var optall = jQuery.speed( speed, easing, callback ),
