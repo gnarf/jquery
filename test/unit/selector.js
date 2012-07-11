@@ -165,3 +165,8 @@ testIframe("selector/sizzle_cache", "Sizzle cache collides with multiple Sizzles
 	equal( jQuery('.evil a').length, 0, "Select nothing with second sizzle" );
 	equal( jQuery('.evil a').length, 0, "Select nothing again with second sizzle" );
 });
+
+test( "jQuery( document ).is( '.classname' ) (#12054)", 1, function() {
+	ok( !jQuery( document ).is( '.classname' ), "Document didn't match .classname" );
+	// more importantly it didn't throw an exception
+});
