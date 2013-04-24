@@ -100,6 +100,7 @@ Data.prototype = {
 				}
 			}
 		}
+		return cache;
 	},
 	get: function( owner, key ) {
 		// Either a valid cache is found, or will be created.
